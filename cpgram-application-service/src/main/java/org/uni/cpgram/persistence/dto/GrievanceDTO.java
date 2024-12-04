@@ -1,17 +1,14 @@
-package org.uni.cpgram.model;
+package org.uni.cpgram.persistence.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
-
-
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CpgramGrievanceModel {
+public class GrievanceDTO {
     private String id;
     private String description;
     private String raisedBy;
