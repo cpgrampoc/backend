@@ -11,7 +11,7 @@ import org.uni.cpgram.persistence.dao.CategoryDao;
 import java.util.ArrayList;
 import java.util.List;
 
-@Repository
+@Repository("categoryDaoImpl")
 public class CategoryDaoImpl implements CategoryDao {
 
     @Autowired
