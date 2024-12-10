@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+import java.util.Map;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -18,4 +21,6 @@ public class OnboardingDept {
     private Integer parentLevel;
     private Boolean isMandatory;
     private String ownerName;
+    private List<Map<String, Object>> categories;
+    private List<Map<String, Object>> fieldDetails;
 }
