@@ -6,5 +6,7 @@ CREATE TABLE m_onboarding_dept (
     level INTEGER,
     parent_level INTEGER,
     is_mandatory BOOLEAN,
-    owner_name VARCHAR(100)
+    owner_name VARCHAR(100),
+    field_details jsonb,
+    categories jsonb
 );

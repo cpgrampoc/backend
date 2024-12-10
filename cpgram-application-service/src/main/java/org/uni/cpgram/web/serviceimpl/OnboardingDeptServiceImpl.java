@@ -21,13 +21,16 @@ public class OnboardingDeptServiceImpl implements OnboardingDeptService {
     private OnboardingDeptDao onboardingDeptDao;
 
     @Autowired
-    private OnboardingDeptModelMapper  onboardingDeptModelMapper;
+    private OnboardingDeptModelMapper onboardingDeptModelMapper;
 
 
     @Override
     public void save(OnboardingDeptDTO onboardingDeptDTO) {
         try {
             OnboardingDept onboardingDept = onboardingDeptModelMapper.toModel(onboardingDeptDTO);
+            onboardingDept.setFieldDetails(onboardingDeptDTO.getFieldDetails());
+            onboardingDept.setCategories(onboardingDeptDTO.getCategories());
+
             if (onboardingDept.getUuid() == null || onboardingDept.getUuid().isEmpty()) {
                String uuid = onboardingDeptDao.create(onboardingDept);
                if(!StringUtils.isEmpty(uuid)){
