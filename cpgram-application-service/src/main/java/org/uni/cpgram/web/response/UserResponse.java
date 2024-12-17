@@ -4,10 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.uni.cpgram.persistence.dto.UserDTO;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
-public class LoginResponse {
+public class UserResponse {
     private String status;
     private String message;
-    private UserDTO user;
+    private List<UserDTO> user;
 }
