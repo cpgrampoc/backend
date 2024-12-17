@@ -6,5 +6,5 @@ import org.uni.cpgram.persistence.dto.UserDTO;
 import java.util.Optional;
 
 public interface UserService {
-    public Optional<UserDTO> login(String email, String password);
+    public Optional<UserDTO> login(String email, String password, String userType, String mobileNumber);
 }

@@ -17,8 +17,13 @@ public class UserServiceImpl implements UserService {
     private UserRepository userRepository;
 
 
-    public Optional<UserDTO> login(String email, String password) {
-        Optional<User> user = userRepository.findByEmailAndPassword(email, password);
+    public Optional<UserDTO> login(String email, String password, String userType, String mobileNumber) {
+        Optional<User> user = null;
+        if(userType.equalsIgnoreCase("Citizen")){
+            user = userRepository.findByMobileNoAndPassword(mobileNumber, password);
+        }else {
+            user = userRepository.findByEmailAndPassword(email, password);
+        }
 
         return Optional.ofNullable(mapToUserDTO(user));
     }
