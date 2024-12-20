@@ -38,14 +38,20 @@ public class OnboardDemoController {
     public ResponseEntity<OnboardDemoResponse> getAllDetails(@RequestBody OnboardDemoRequest onboardDemoRequest) {
 
             OnboardDemoResponse allDetails = onboardDemoService.getAllDetails(onboardDemoRequest.getOnboardDemoDTO().getParent());
-            return new ResponseEntity<>(allDetails, HttpStatus.CREATED);
+            return new ResponseEntity<>(allDetails, HttpStatus.OK);
 
 
 
 
 
     }
+    @PostMapping("/getHierarchy")
+    public ResponseEntity<OnboardDemoResponse> getHierarchy() {
 
+        OnboardDemoResponse allDetails = onboardDemoService.getHierarchy();
+
+        return new ResponseEntity<>(allDetails, HttpStatus.OK);
+    }
 
 
 
