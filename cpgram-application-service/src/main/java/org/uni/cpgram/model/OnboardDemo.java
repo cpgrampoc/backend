@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Type;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -14,10 +15,10 @@ import java.util.List;
 @Builder
 public class OnboardDemo {
 
-    private String id;
+    private Long id;
     private String description;
     private String orgcode;
-    private String  parent;
+    private Long  parent;
     private Integer stage;
     private String descriptionhindi;
     private Integer monitoringcode;
@@ -26,7 +27,7 @@ public class OnboardDemo {
     private String destination;
     private String isactive;
     private List<Double> embedding;
-    private String fieldDetails;
+    private List<Map<String, Object>> fieldDetails;
     private Integer code;
 }
 

@@ -22,6 +22,7 @@ import org.uni.cpgram.web.service.OnboardDemoService;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @Service
@@ -52,34 +53,35 @@ public class OnboardDemoServiceImpl implements OnboardDemoService {
     @Override
     public OnboardDemoResponse create(OnboardDemoRequest onboardDemoRequest) throws Exception {
         List<OnboardDemoDTO> allOnboardData = new ArrayList<>();
-        onboardDemoRequest.getOnboardDemoDTO().setId(UUID.randomUUID().toString());
+        OnboardDemoResponse onboardDemoResponse = new OnboardDemoResponse();
+
+        List<String> msg = new ArrayList<>();
+        AtomicLong currentId = new AtomicLong(onboardDemoRepository.getNextUserId());
 
         // Check if the parent description already exists
-        if (onboardDemoRepository.existsByDescription(onboardDemoRequest.getOnboardDemoDTO().getDescription())) {
-            // If parent exists, fetch its ID
 
-          String description=onboardDemoRequest.getOnboardDemoDTO().getDescription();
-            List<OnboardDemo> existingParentId = onboardDemoRepository.findByParent("description",description);
+        // If parent exists, fetch its ID
+
+        String description = onboardDemoRequest.getOnboardDemoDTO().getDescription();
+        List<OnboardDemo> existingParentId = onboardDemoRepository.findByDescription("description", description);
 
              boolean isPresent=false;
 
             if (!CollectionUtils.isEmpty(existingParentId)){
+                msg.add(onboardDemoRequest.getOnboardDemoDTO().getDescription() + " already Exist");
                 onboardDemoRequest.getOnboardDemoDTO().setId(existingParentId.get(0).getId());
                 onboardDemoRequest.getOnboardDemoDTO().setEmbedding(existingParentId.get(0).getEmbedding());
                 isPresent=true;
-                extractCategoriesAndSubCategories(isPresent,onboardDemoRequest.getOnboardDemoDTO(), allOnboardData, null);
+                extractCategoriesAndSubCategories(isPresent, onboardDemoRequest.getOnboardDemoDTO(), allOnboardData, currentId, null, msg);
 
+            } else {
+                // If parent does not exist, generate a new ID and add it to the list
+                onboardDemoRequest.getOnboardDemoDTO().setId(currentId.getAndIncrement());
+                List<Double> embeddingList = fetchEmbedding(onboardDemoRequest.getOnboardDemoDTO().getDescription());
+                onboardDemoRequest.getOnboardDemoDTO().setEmbedding(embeddingList);
+                // allOnboardData.add(onboardDemoRequest.getOnboardDemoDTO());
+                extractCategoriesAndSubCategories(false, onboardDemoRequest.getOnboardDemoDTO(), allOnboardData, currentId, null, msg);
             }
-
-
-        } else {
-            // If parent does not exist, generate a new ID and add it to the list
-            onboardDemoRequest.getOnboardDemoDTO().setId(UUID.randomUUID().toString());
-            List<Double> embeddingList = fetchEmbedding(onboardDemoRequest.getOnboardDemoDTO().getDescription());
-            onboardDemoRequest.getOnboardDemoDTO().setEmbedding(embeddingList);
-           // allOnboardData.add(onboardDemoRequest.getOnboardDemoDTO());
-            extractCategoriesAndSubCategories(false,onboardDemoRequest.getOnboardDemoDTO(), allOnboardData, null);
-        }
 
         // Extract data from the parent level
 
@@ -87,12 +89,12 @@ public class OnboardDemoServiceImpl implements OnboardDemoService {
         // Save all the extracted data in one database call
         List<OnboardDemo> onboardDemo= onboardDemoRepository.saveAll(onboardDemoList);
         List<OnboardDemoDTO> onboardDemoDTORes=onboardDemo.stream().map(onboardDemoModelMapper::toDTO).toList();
-        return OnboardDemoResponse.builder().onboardDemoDTOList(onboardDemoDTORes).build();
+        return OnboardDemoResponse.builder().onboardDemoDTOList(onboardDemoDTORes).msg(msg).build();
     }
 
 
     @Override
-    public OnboardDemoResponse getAllDetails(String parentId) {
+    public OnboardDemoResponse getAllDetails(Long parentId) {
 		  List<OnboardDemo> onboardDemoList=
 		 onboardDemoRepository.findByParent("parent",parentId);
 		  List<OnboardDemoDTO>
@@ -106,9 +108,9 @@ public class OnboardDemoServiceImpl implements OnboardDemoService {
 
 
     // Recursive method to extract categories and subCategories, and add to the list
-    private void extractCategoriesAndSubCategories(boolean isPresent,OnboardDemoDTO onboardDemoDTO,
-                                                   List<OnboardDemoDTO> allOnboardData,
-                                                   String parentId) throws Exception {
+    private void extractCategoriesAndSubCategories(boolean isPresent, OnboardDemoDTO onboardDemoDTO,
+                                                   List<OnboardDemoDTO> allOnboardData, AtomicLong currentId,
+                                                   Long parentId, List<String> msg) throws Exception {
 
 
             // If the parentId is not null, set it as the parent ID for the current DTO
@@ -125,30 +127,47 @@ public class OnboardDemoServiceImpl implements OnboardDemoService {
         // Process categories (if any)
         if (onboardDemoDTO.getCategories() != null) {
             for (OnboardDemoDTO category : onboardDemoDTO.getCategories()) {
-                // Generate a new UUID for the category and set its parentId as the current DTO's id
-                category.setId(UUID.randomUUID().toString());
-                category.setParent(onboardDemoDTO.getId());
-                category.setOrgcode(onboardDemoDTO.getOrgcode());
-                List<Double> embeddingList  = fetchEmbedding(onboardDemoDTO.getDescription());
-                category.setEmbedding(embeddingList);
 
-                // Recursive call for subcategories within the category
-                extractCategoriesAndSubCategories(false,category, allOnboardData, onboardDemoDTO.getId());
+
+                List<OnboardDemo> existingParentId = onboardDemoRepository.findByDescription("description", category.getDescription());
+                if (!CollectionUtils.isEmpty(existingParentId)) {
+                    msg.add(category.getDescription() + " already Exist");
+                    // Set the existing category's ID as the parent for the new category
+                    category.setId(existingParentId.get(0).getId());
+                    category.setParent(existingParentId.get(0).getParent());
+
+                    // Avoid adding this category to the list
+                    extractCategoriesAndSubCategories(true, category, allOnboardData, currentId, onboardDemoDTO.getId(), msg);
+                } else {
+
+                    // Generate a new UUID for the category and set its parentId as the current DTO's id
+
+                    category.setId(currentId.getAndIncrement());
+                    category.setParent(onboardDemoDTO.getId());
+
+                    category.setOrgcode(onboardDemoDTO.getOrgcode());
+                    List<Double> embeddingList = fetchEmbedding(onboardDemoDTO.getDescription());
+                    category.setEmbedding(embeddingList);
+
+                    // Recursive call for subcategories within the category
+                    extractCategoriesAndSubCategories(false, category, allOnboardData, currentId, onboardDemoDTO.getId(), msg);
+                }
             }
         }
 
         // Process subCategories (if any)
         if (onboardDemoDTO.getSubCategories() != null) {
             for (OnboardDemoDTO subCategory : onboardDemoDTO.getSubCategories()) {
-                // Generate a new UUID for the subcategory and set its parentId as the current DTO's id
-                subCategory.setId(UUID.randomUUID().toString());
+
+                subCategory.setId(currentId.getAndIncrement());
                 subCategory.setParent(onboardDemoDTO.getId());
+
                 subCategory.setOrgcode(onboardDemoDTO.getOrgcode());
                 List<Double> embeddingList = fetchEmbedding(onboardDemoDTO.getDescription());
                 subCategory.setEmbedding(embeddingList);
 
                 // Recursive call for subCategories of subCategories (if any)
-                extractCategoriesAndSubCategories(false,subCategory, allOnboardData, onboardDemoDTO.getId());
+                extractCategoriesAndSubCategories(false, subCategory, allOnboardData, currentId, onboardDemoDTO.getId(), msg);
             }
         }
     }
@@ -200,5 +219,33 @@ public class OnboardDemoServiceImpl implements OnboardDemoService {
             throw new RuntimeException("Error extracting embedding from OpenAI API response", e);
         }
     }
+
+
+    @Override
+    public OnboardDemoResponse getHierarchy() {
+        // Fetch all root categories (parent = 0)
+        List<OnboardDemo> rootCategories = onboardDemoRepository.findByParent("parent",0L);
+
+        // Build the hierarchy recursively
+       var x= rootCategories.stream()
+                .map(this::buildHierarchy)
+                .toList();
+
+
+       return OnboardDemoResponse.builder().msg(Collections.singletonList("Hierarchy successfully built and retrieved!")).onboardDemoDTOList(x).build();
+    }
+
+    private OnboardDemoDTO buildHierarchy(OnboardDemo onboardDemo) {
+        // Fetch children for the current category
+        List<OnboardDemoDTO> children = onboardDemoRepository.findByParent("parent",onboardDemo.getId()).stream()
+                .map(this::buildHierarchy)
+                .toList();
+
+        OnboardDemoDTO dto = onboardDemoModelMapper.toDTO(onboardDemo);
+        dto.setCategories(children); // Set the children
+        return dto;
+    }
+
+
 
 }

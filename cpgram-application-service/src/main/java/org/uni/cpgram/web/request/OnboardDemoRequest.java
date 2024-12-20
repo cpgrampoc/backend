@@ -12,6 +12,7 @@ import org.uni.cpgram.persistence.dto.OnboardDemoDTO;
 @AllArgsConstructor
 @Builder
 public class OnboardDemoRequest {
+ private String message;
  private OnboardDemoDTO onboardDemoDTO;
 
 }

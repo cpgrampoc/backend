@@ -3,6 +3,7 @@ package org.uni.cpgram.persistence.mapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.postgresql.util.PGobject;
 import org.springframework.jdbc.core.RowMapper;
 import org.uni.cpgram.model.OnboardDemo;
 
@@ -10,6 +11,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class OnboardDemoRowMapper implements RowMapper<OnboardDemo> {
@@ -20,10 +22,10 @@ public class OnboardDemoRowMapper implements RowMapper<OnboardDemo> {
     public OnboardDemo mapRow(ResultSet rs, int rowNum) throws SQLException {
         OnboardDemo demo = new OnboardDemo();
 
-        demo.setId(rs.getString("id"));
+        demo.setId(rs.getLong("id"));
         demo.setDescription(rs.getString("description"));
         demo.setOrgcode(rs.getString("orgcode"));
-        demo.setParent(rs.getString("parent"));
+        demo.setParent(rs.getLong("parent"));
         demo.setStage(rs.getInt("stage"));
         demo.setDescriptionhindi(rs.getString("descriptionhindi"));
         demo.setMonitoringcode(rs.getInt("monitoringcode"));
@@ -31,8 +33,19 @@ public class OnboardDemoRowMapper implements RowMapper<OnboardDemo> {
         demo.setFieldcode(rs.getInt("fieldcode"));
         demo.setDestination(rs.getString("destination"));
         demo.setIsactive(rs.getString("isactive"));
-        demo.setFieldDetails(rs.getString("field_details"));
         demo.setCode(rs.getInt("code"));
+
+        PGobject fieldDetailsObject = (PGobject) rs.getObject("field_details");
+        if (fieldDetailsObject != null) {
+            String fieldDetailsJson = fieldDetailsObject.getValue();
+            List<Map<String, Object>> fieldDetails = null;
+            try {
+                fieldDetails = objectMapper.readValue(fieldDetailsJson, new TypeReference<List<Map<String, Object>>>() {});
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+            demo.setFieldDetails(fieldDetails);
+        }
 
         // Deserialize JSONB to List<Double>
         String embeddingStr = rs.getString("embedding");

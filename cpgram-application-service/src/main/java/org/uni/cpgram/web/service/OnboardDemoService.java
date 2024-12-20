@@ -10,5 +10,6 @@ import java.util.Set;
 public interface OnboardDemoService {
 
     OnboardDemoResponse create(OnboardDemoRequest onboardDemoRequest) throws Exception;
-    OnboardDemoResponse getAllDetails(String parentId);
+    OnboardDemoResponse getAllDetails(Long parentId);
+    OnboardDemoResponse getHierarchy();
 }
